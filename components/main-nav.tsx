@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { AppUserSession } from "@/lib/types";
 
 const items = [
   { href: "/", label: "Home" },
@@ -8,7 +9,16 @@ const items = [
   { href: "/reports", label: "Monthly Reports" }
 ];
 
-export function MainNav() {
+type MainNavProps = {
+  session: AppUserSession | null;
+};
+
+export function MainNav({ session }: MainNavProps) {
+  const navigationItems =
+    session?.role === "admin"
+      ? [...items, { href: "/settings/users", label: "User Access" }]
+      : items;
+
   return (
     <header className="main-nav">
       <div className="brand-cluster">
@@ -39,12 +49,30 @@ export function MainNav() {
       </div>
 
       <nav className="nav-links">
-        {items.map((item) => (
+        {navigationItems.map((item) => (
           <Link className="nav-link" href={item.href} key={item.href}>
             {item.label}
           </Link>
         ))}
       </nav>
+
+      <div className="nav-user">
+        {session ? (
+          <>
+            <div className="nav-user-badge">
+              <strong>{session.displayName}</strong>
+              <span>{`${session.role} • ${session.email}`}</span>
+            </div>
+            <a className="button button-secondary" href="/api/auth/logout">
+              Sign out
+            </a>
+          </>
+        ) : (
+          <Link className="button button-primary" href="/login">
+            Sign in
+          </Link>
+        )}
+      </div>
     </header>
   );
 }

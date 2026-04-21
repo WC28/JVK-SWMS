@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requirePageSession } from "@/lib/app-auth";
 import { MetricCard } from "@/components/metric-card";
 import { SectionCard } from "@/components/section-card";
 import { buildSummary } from "@/lib/analytics";
@@ -8,6 +9,7 @@ import { listCases } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  await requirePageSession();
   const summary = buildSummary(await listCases());
 
   return (

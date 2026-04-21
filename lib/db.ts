@@ -1,6 +1,6 @@
 import { calculateJvkDeadline, normalizeStatus } from "@/lib/business-days";
 import { defaultCaseForm } from "@/lib/constants";
-import type { CaseRecord, MonthlySnapshot } from "@/lib/types";
+import type { AllowedUser, AllowedUserRole, CaseRecord, MonthlySnapshot } from "@/lib/types";
 
 const PAGE_SIZE = 1000;
 
@@ -50,6 +50,15 @@ type DbSnapshotRow = {
 type DbSettingRow = {
   key: string;
   value: string;
+  updated_at: string;
+};
+
+type DbAllowedUserRow = {
+  email: string;
+  display_name: string;
+  role: AllowedUserRole;
+  is_active: boolean;
+  created_at: string;
   updated_at: string;
 };
 
@@ -193,6 +202,17 @@ function mapSnapshotRow(row: DbSnapshotRow): MonthlySnapshot {
     totalCases: row.total_cases,
     payload,
     createdAt: row.created_at
+  };
+}
+
+function mapAllowedUserRow(row: DbAllowedUserRow): AllowedUser {
+  return {
+    email: row.email,
+    displayName: row.display_name,
+    role: row.role,
+    isActive: Boolean(row.is_active),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
   };
 }
 
@@ -462,6 +482,77 @@ export async function deleteAppSetting(key: string) {
 
   await supabaseRequest(
     `app_settings?key=eq.${encodeURIComponent(key)}`,
+    { method: "DELETE" },
+    { Prefer: "return=minimal" }
+  );
+}
+
+export async function listAllowedUsers() {
+  if (!hasSupabaseConfig()) {
+    return [];
+  }
+
+  const rows = await selectAll<DbAllowedUserRow>("allowed_users?select=*&order=email.asc");
+  return rows.map(mapAllowedUserRow);
+}
+
+export async function getAllowedUserByEmail(email: string) {
+  if (!hasSupabaseConfig()) {
+    return null;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const row = unwrapSingle(
+    await supabaseRequest<DbAllowedUserRow[]>(
+      `allowed_users?select=*&email=eq.${encodeURIComponent(normalizedEmail)}&limit=1`,
+      { method: "GET" }
+    )
+  );
+
+  return row ? mapAllowedUserRow(row) : null;
+}
+
+export async function upsertAllowedUser(payload: {
+  email: string;
+  displayName?: string;
+  role: AllowedUserRole;
+  isActive?: boolean;
+}) {
+  if (!hasSupabaseConfig()) {
+    return null;
+  }
+
+  const normalized = {
+    email: payload.email.trim().toLowerCase(),
+    display_name: payload.displayName?.trim() || "",
+    role: payload.role,
+    is_active: payload.isActive ?? true,
+    updated_at: new Date().toISOString()
+  };
+
+  const saved = unwrapSingle(
+    await supabaseRequest<DbAllowedUserRow[]>(
+      "allowed_users",
+      {
+        method: "POST",
+        body: JSON.stringify(normalized)
+      },
+      {
+        Prefer: "resolution=merge-duplicates,return=representation"
+      }
+    )
+  );
+
+  return saved ? mapAllowedUserRow(saved) : null;
+}
+
+export async function deleteAllowedUser(email: string) {
+  if (!hasSupabaseConfig()) {
+    return;
+  }
+
+  await supabaseRequest(
+    `allowed_users?email=eq.${encodeURIComponent(email.trim().toLowerCase())}`,
     { method: "DELETE" },
     { Prefer: "return=minimal" }
   );

@@ -1,4 +1,5 @@
 import { ReportsClient } from "@/components/reports-client";
+import { requirePageSession } from "@/lib/app-auth";
 import {
   buildAreaBySwBoards,
   buildCountsByArea,
@@ -22,6 +23,7 @@ type ReportsPageProps = {
 };
 
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
+  const session = await requirePageSession();
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const defaults = getDefaultMonthYear();
   const snapshots = await listSnapshots();
@@ -31,7 +33,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const currentRows = filterCasesByMonthYear(await listCases(), month, year);
   const swBoards = buildSwBoardSummaries(currentRows);
   const topProblems = buildProblemBreakdown(currentRows).slice(0, 10);
-  const swTotals = buildCountsBySw(currentRows);
   const swOpd = buildCountsBySw(currentRows, (row) => row.intake === "OPD");
   const swIpd = buildCountsBySw(currentRows, (row) => row.intake === "IPD");
   const swEr = buildCountsBySw(currentRows, (row) => row.intake === "ER");
@@ -81,10 +82,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         swIpd={swIpd}
         swMale={swMale}
         swOpd={swOpd}
-        swTotals={swTotals}
         topProblems={topProblems}
         wardCounts={wardCounts}
         year={year}
+        canManageSnapshots={["admin", "editor"].includes(session.role)}
       />
     </div>
   );

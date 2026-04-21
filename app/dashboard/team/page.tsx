@@ -3,6 +3,7 @@ import { DonutChart, HorizontalBarChart } from "@/components/kpi-charts";
 import { MetricCard } from "@/components/metric-card";
 import { MonthYearFilter } from "@/components/month-year-filter";
 import { SectionCard } from "@/components/section-card";
+import { requirePageSession } from "@/lib/app-auth";
 import {
   buildAgeBreakdown,
   buildIntakeBreakdown,
@@ -22,6 +23,7 @@ type TeamDashboardPageProps = {
 };
 
 export default async function TeamDashboardPage({ searchParams }: TeamDashboardPageProps) {
+  await requirePageSession();
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const { month, year } = parseMonthYear(resolvedSearchParams);
   const rows = filterCasesByMonthYear(await listCases(), month, year);

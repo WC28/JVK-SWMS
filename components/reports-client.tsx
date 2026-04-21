@@ -39,6 +39,7 @@ type AreaBySwBoard = {
 type ReportsClientProps = {
   areaCounts: CountEntry[];
   areaBySwBoards: AreaBySwBoard[];
+  canManageSnapshots: boolean;
   initialSnapshots: MonthlySnapshot[];
   mdIpd: CountEntry[];
   mdMatrixIpd: MdSwMatrixRow[];
@@ -53,7 +54,6 @@ type ReportsClientProps = {
   swIpd: CountEntry[];
   swMale: CountEntry[];
   swOpd: CountEntry[];
-  swTotals: CountEntry[];
   topProblems: Array<{ label: string; total: number }>;
   wardCounts: CountEntry[];
   year: number;
@@ -62,6 +62,7 @@ type ReportsClientProps = {
 export function ReportsClient({
   areaCounts,
   areaBySwBoards,
+  canManageSnapshots,
   initialSnapshots,
   mdIpd,
   mdMatrixIpd,
@@ -76,7 +77,6 @@ export function ReportsClient({
   swIpd,
   swMale,
   swOpd,
-  swTotals,
   topProblems,
   wardCounts,
   year
@@ -95,6 +95,11 @@ export function ReportsClient({
   }
 
   async function createTeamSnapshot() {
+    if (!canManageSnapshots) {
+      setMessage("บัญชีนี้ไม่มีสิทธิ์สร้าง snapshot");
+      return;
+    }
+
     setIsSavingTeam(true);
     setMessage("");
 
@@ -119,6 +124,11 @@ export function ReportsClient({
   }
 
   async function createSwSnapshot() {
+    if (!canManageSnapshots) {
+      setMessage("บัญชีนี้ไม่มีสิทธิ์สร้าง snapshot");
+      return;
+    }
+
     setIsSavingSw(true);
     setMessage("");
 
@@ -144,6 +154,11 @@ export function ReportsClient({
   }
 
   async function clearAllSnapshots() {
+    if (!canManageSnapshots) {
+      setMessage("บัญชีนี้ไม่มีสิทธิ์ล้าง snapshot");
+      return;
+    }
+
     if (!window.confirm("ต้องการล้าง Saved Snapshots ทั้งหมดใช่หรือไม่")) {
       return;
     }
@@ -169,6 +184,11 @@ export function ReportsClient({
   }
 
   async function deleteOneSnapshot(id: number) {
+    if (!canManageSnapshots) {
+      setMessage("บัญชีนี้ไม่มีสิทธิ์ลบ snapshot");
+      return;
+    }
+
     const response = await fetch("/api/snapshots", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -237,6 +257,9 @@ export function ReportsClient({
       </section>
 
       {message ? <p className="feedback">{message}</p> : null}
+      {!canManageSnapshots ? (
+        <p className="feedback">บัญชีนี้เป็น viewer จึงดูรายงานได้ แต่ไม่สามารถสร้างหรือลบ snapshot ได้</p>
+      ) : null}
 
       <section className="reports-overview-grid">
         <article className="reports-overview-card reports-overview-card-primary">
@@ -268,7 +291,7 @@ export function ReportsClient({
             <p className="section-subtitle">บันทึกประวัติรายงานรายเดือนลงฐานข้อมูลเพื่อใช้อ้างอิงย้อนหลัง</p>
           </div>
           <div className="stack-lg">
-            <button className="button button-primary" onClick={createTeamSnapshot} type="button">
+            <button className="button button-primary" disabled={!canManageSnapshots} onClick={createTeamSnapshot} type="button">
               {isSavingTeam ? "Saving..." : "Save Team Snapshot"}
             </button>
             <div className="stack-lg">
@@ -282,11 +305,11 @@ export function ReportsClient({
                   ))}
                 </select>
               </label>
-              <button className="button button-secondary" onClick={createSwSnapshot} type="button">
+              <button className="button button-secondary" disabled={!canManageSnapshots} onClick={createSwSnapshot} type="button">
                 {isSavingSw ? "Saving..." : "Save SW Snapshot"}
               </button>
             </div>
-            <button className="button button-danger" onClick={clearAllSnapshots} type="button">
+            <button className="button button-danger" disabled={!canManageSnapshots} onClick={clearAllSnapshots} type="button">
               {isClearingSnapshots ? "Clearing..." : "Clear Saved Snapshots"}
             </button>
           </div>
@@ -348,6 +371,7 @@ export function ReportsClient({
                     <td>
                       <button
                         className="button button-danger"
+                        disabled={!canManageSnapshots}
                         onClick={() => deleteOneSnapshot(snapshot.id)}
                         type="button"
                       >
@@ -418,7 +442,6 @@ export function ReportsClient({
       </section>
 
       <section className="reports-grid reports-grid-2x">
-        {renderMetricGrid("KPI Total Intake Cases (แยกตาม SW)", swTotals, "reports-tone-blue")}
         {renderMetricGrid("KPI Total OPD (แยกตาม SW)", swOpd, "reports-tone-cyan")}
         {renderMetricGrid("KPI Total IPD (แยกตาม SW)", swIpd, "reports-tone-indigo")}
         {renderMetricGrid("KPI Total ER (แยกตาม SW)", swEr, "reports-tone-red")}

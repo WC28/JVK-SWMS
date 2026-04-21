@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requirePageSession } from "@/lib/app-auth";
 import { ExportPngButton } from "@/components/export-png-button";
 import { DonutChart, HorizontalBarChart } from "@/components/kpi-charts";
 import { MetricCard } from "@/components/metric-card";
@@ -25,6 +26,7 @@ type SwDashboardPageProps = {
 };
 
 export default async function SwDashboardPage({ searchParams }: SwDashboardPageProps) {
+  await requirePageSession();
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const { month, year } = parseMonthYear(resolvedSearchParams);
   const selectedSw =

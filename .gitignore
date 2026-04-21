@@ -4,3 +4,5 @@ out
 dist
 *.log
 data
+.env.local
+.env*.local

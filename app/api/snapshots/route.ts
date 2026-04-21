@@ -1,13 +1,24 @@
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/lib/app-auth";
 import { clearSnapshots, createSnapshot, deleteSnapshot, listCases, listSnapshots } from "@/lib/db";
 import { filterCasesBySw, buildSummary, buildProblemBreakdown } from "@/lib/analytics";
 import { filterCasesByMonthYear } from "@/lib/date-filters";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireApiSession(request);
+  if (auth.error) {
+    return auth.error;
+  }
+
   return NextResponse.json(await listSnapshots());
 }
 
 export async function POST(request: Request) {
+  const auth = await requireApiSession(request, ["admin", "editor"]);
+  if (auth.error) {
+    return auth.error;
+  }
+
   const body = (await request.json()) as {
     snapshotMonth: number;
     snapshotYear: number;
@@ -50,6 +61,11 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const auth = await requireApiSession(request, ["admin", "editor"]);
+  if (auth.error) {
+    return auth.error;
+  }
+
   const body = (await request.json().catch(() => ({}))) as {
     id?: number;
     mode?: "single" | "all";

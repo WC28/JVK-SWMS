@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/lib/app-auth";
 import { listCases, replaceAllCases } from "@/lib/db";
 import {
   exportCasesToGoogleSheet,
@@ -7,7 +8,12 @@ import {
   isGoogleConnected
 } from "@/lib/google-sheets";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireApiSession(request);
+  if (auth.error) {
+    return auth.error;
+  }
+
   return NextResponse.json({
     configured: hasGoogleSheetsConfig(),
     connected: await isGoogleConnected()
@@ -15,6 +21,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireApiSession(request, ["admin", "editor"]);
+  if (auth.error) {
+    return auth.error;
+  }
+
   if (!hasGoogleSheetsConfig()) {
     return NextResponse.json(
       {

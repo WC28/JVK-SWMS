@@ -16,13 +16,15 @@ import {
   wardOptions,
   type CaseFormState
 } from "@/lib/constants";
-import type { CaseRecord } from "@/lib/types";
+import type { AppUserSession, CaseRecord } from "@/lib/types";
 
 type CaseEntryClientProps = {
+  canEdit: boolean;
   initialCases: CaseRecord[];
+  session: AppUserSession;
 };
 
-export function CaseEntryClient({ initialCases }: CaseEntryClientProps) {
+export function CaseEntryClient({ canEdit, initialCases, session }: CaseEntryClientProps) {
   const [cases, setCases] = useState(initialCases);
   const [form, setForm] = useState<CaseFormState>(defaultCaseForm);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -148,6 +150,11 @@ export function CaseEntryClient({ initialCases }: CaseEntryClientProps) {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canEdit) {
+      setMessage("บัญชีนี้ไม่มีสิทธิ์บันทึกข้อมูล");
+      return;
+    }
+
     setIsSubmitting(true);
     setMessage("");
 
@@ -175,6 +182,11 @@ export function CaseEntryClient({ initialCases }: CaseEntryClientProps) {
   }
 
   async function handleDelete(id: number) {
+    if (!canEdit) {
+      setMessage("บัญชีนี้ไม่มีสิทธิ์ลบข้อมูล");
+      return;
+    }
+
     if (!window.confirm("ต้องการลบเคสนี้ใช่หรือไม่")) {
       return;
     }
@@ -188,6 +200,11 @@ export function CaseEntryClient({ initialCases }: CaseEntryClientProps) {
   }
 
   async function handleGoogleSync(direction: "export" | "import") {
+    if (!canEdit) {
+      setMessage("บัญชีนี้ไม่มีสิทธิ์ sync กับ Google Sheet");
+      return;
+    }
+
     setIsSyncing(true);
     setMessage("");
 
@@ -222,6 +239,11 @@ export function CaseEntryClient({ initialCases }: CaseEntryClientProps) {
   }
 
   async function handleDisconnectGoogle() {
+    if (!canEdit) {
+      setMessage("บัญชีนี้ไม่มีสิทธิ์ตัดการเชื่อม Google");
+      return;
+    }
+
     await fetch("/api/google-oauth/disconnect", {
       method: "POST"
     });
@@ -259,24 +281,28 @@ export function CaseEntryClient({ initialCases }: CaseEntryClientProps) {
         </div>
 
         <div className="case-command-actions">
-          <button className="button button-primary" form="case-form" type="submit">
+          <button className="button button-primary" disabled={!canEdit} form="case-form" type="submit">
             {isSubmitting ? "Saving..." : editingId ? "อัปเดตเคส" : "บันทึกเคส"}
           </button>
-          <button className="button button-secondary" onClick={resetForm} type="button">
+          <button className="button button-secondary" disabled={!canEdit} onClick={resetForm} type="button">
             ล้างฟอร์ม
           </button>
           {googleStatus.connected ? (
-            <button className="button button-secondary" onClick={handleDisconnectGoogle} type="button">
+            <button className="button button-secondary" disabled={!canEdit} onClick={handleDisconnectGoogle} type="button">
               Disconnect Google
             </button>
           ) : (
-            <a className="button button-secondary" href="/api/google-oauth/start">
+            <a
+              aria-disabled={!canEdit}
+              className={`button button-secondary${!canEdit ? " button-disabled" : ""}`}
+              href={canEdit ? "/api/google-oauth/start" : "#"}
+            >
               Connect Google
             </a>
           )}
           <button
             className="button button-secondary"
-            disabled={!googleStatus.connected || isSyncing}
+            disabled={!canEdit || !googleStatus.connected || isSyncing}
             onClick={() => handleGoogleSync("export")}
             type="button"
           >
@@ -284,7 +310,7 @@ export function CaseEntryClient({ initialCases }: CaseEntryClientProps) {
           </button>
           <button
             className="button button-secondary"
-            disabled={!googleStatus.connected || isSyncing}
+            disabled={!canEdit || !googleStatus.connected || isSyncing}
             onClick={() => handleGoogleSync("import")}
             type="button"
           >
@@ -302,6 +328,7 @@ export function CaseEntryClient({ initialCases }: CaseEntryClientProps) {
             Google OAuth: {googleStatus.connected ? "เชื่อมแล้ว" : "ยังไม่เชื่อม"}
           </div>
           <div className="filter-pill">Registry: {filteredCases.length} cases</div>
+          <div className="filter-pill">{`${session.displayName} • ${session.role}`}</div>
         </div>
 
         <div className="case-stat-grid">
@@ -406,6 +433,11 @@ export function CaseEntryClient({ initialCases }: CaseEntryClientProps) {
       </section>
 
       {message ? <p className="feedback">{message}</p> : null}
+      {!canEdit ? (
+        <p className="feedback">
+          บัญชีนี้เป็น viewer จึงดูข้อมูลได้อย่างเดียว หากต้องการบันทึกหรือแก้ไขข้อมูลให้ผู้ดูแลเปลี่ยนสิทธิ์เป็น editor หรือ admin
+        </p>
+      ) : null}
 
       <form className="case-clinical-layout" id="case-form" onSubmit={handleSubmit}>
         <aside className="case-sidebar">
@@ -692,7 +724,7 @@ export function CaseEntryClient({ initialCases }: CaseEntryClientProps) {
                         <button className="button button-secondary" onClick={() => fillForm(item)} type="button">
                           Edit
                         </button>
-                        <button className="button button-danger" onClick={() => handleDelete(item.id)} type="button">
+                        <button className="button button-danger" disabled={!canEdit} onClick={() => handleDelete(item.id)} type="button">
                           Delete
                         </button>
                       </div>
@@ -750,7 +782,7 @@ export function CaseEntryClient({ initialCases }: CaseEntryClientProps) {
                   <button className="button button-secondary" onClick={() => fillForm(item)} type="button">
                     Edit
                   </button>
-                  <button className="button button-danger" onClick={() => handleDelete(item.id)} type="button">
+                  <button className="button button-danger" disabled={!canEdit} onClick={() => handleDelete(item.id)} type="button">
                     Delete
                   </button>
                 </div>
