@@ -10,8 +10,8 @@ export type CaseRecord = CaseFormState & {
   updatedAt: string;
 };
 
-export type AllowedUser = {
-  email: string;
+export type AppUser = {
+  username: string;
   displayName: string;
   role: AllowedUserRole;
   isActive: boolean;
@@ -20,10 +20,9 @@ export type AllowedUser = {
 };
 
 export type AppUserSession = {
-  email: string;
+  username: string;
   displayName: string;
   role: AllowedUserRole;
-  avatarUrl: string;
   expiresAt: number;
 };
 

@@ -24,7 +24,7 @@ export default async function HomePage() {
           <h1>Information Case และ Dashboard รายเดือนในระบบเดียว</h1>
           <p className="hero-copy">
             ระบบสำหรับทีมสังคมสงเคราะห์ที่เชื่อมข้อมูลเคส, dashboard, monthly snapshot,
-            PNG export และ Google integration ให้อยู่ในประสบการณ์เดียวที่อ่านง่าย
+            PNG export และระบบผู้ใช้ภายในให้อยู่ในประสบการณ์เดียวที่อ่านง่าย
             และพร้อมใช้งานระดับองค์กร
           </p>
 
@@ -43,7 +43,7 @@ export default async function HomePage() {
           <div className="hero-meta">
             <div className="hero-meta-card">
               <span className="hero-meta-label">Live Database</span>
-              <strong>Supabase + OAuth Ready</strong>
+              <strong>Supabase + Local User Auth</strong>
             </div>
             <div className="hero-meta-card">
               <span className="hero-meta-label">Workflow</span>
@@ -79,7 +79,7 @@ export default async function HomePage() {
               </div>
               <div className="hero-chip-card">
                 <span>Identity</span>
-                <strong>Google OAuth</strong>
+                <strong>Username / Password</strong>
               </div>
             </div>
 

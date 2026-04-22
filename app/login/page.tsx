@@ -8,16 +8,13 @@ type LoginPageProps = {
   searchParams?: Promise<{
     error?: string;
     loggedOut?: string;
-    email?: string;
   }>;
 };
 
 const errorMessages: Record<string, string> = {
-  "missing-google-config": "ยังไม่ได้ตั้งค่า Google OAuth สำหรับระบบล็อกอิน",
-  "google-denied": "คุณยกเลิกการลงชื่อเข้าใช้ด้วย Google",
-  "invalid-state": "ข้อมูลยืนยันตัวตนไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง",
-  "missing-email": "Google account นี้ไม่มีอีเมลที่ยืนยันแล้ว",
-  "not-allowed": "อีเมลนี้ยังไม่ได้รับสิทธิ์เข้าใช้งานระบบ"
+  "missing-credentials": "กรุณากรอก username และ password",
+  "invalid-credentials": "username หรือ password ไม่ถูกต้อง",
+  "session-required": "กรุณาเข้าสู่ระบบก่อนใช้งาน"
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -34,25 +31,36 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <section className="auth-card">
         <div className="auth-card-copy">
           <span className="eyebrow">Secure JVK Access</span>
-          <h1>Sign in with Google</h1>
+          <h1>Sign in with Username &amp; Password</h1>
           <p>
-            ระบบนี้จำกัดการเข้าใช้งานเฉพาะอีเมลที่ได้รับอนุญาตจากผู้ดูแลเท่านั้น
-            หากคุณอยู่ในรายชื่อ 8 คนที่อนุญาต ระบบจะกำหนดสิทธิ์ดูข้อมูลหรือกรอกข้อมูลให้อัตโนมัติ
+            ระบบนี้ใช้บัญชีภายในของหน่วยงาน ผู้ดูแลสามารถกำหนด username, password และสิทธิ์
+            การใช้งานได้ไม่จำกัดจำนวนผู้ใช้
           </p>
         </div>
 
         {resolved?.loggedOut ? <p className="feedback">ออกจากระบบแล้ว</p> : null}
         {error ? <p className="feedback feedback-error">{error}</p> : null}
-        {resolved?.email ? <p className="feedback">อีเมลที่ถูกปฏิเสธ: {resolved.email}</p> : null}
 
-        <div className="auth-actions">
-          <a className="button button-primary" href="/api/auth/google/start">
-            Continue with Google
-          </a>
-          <Link className="button button-secondary" href="https://jvk-swms-wc28.vercel.app">
-            เปิดหน้าเว็บหลัก
-          </Link>
-        </div>
+        <form action="/api/auth/login" className="auth-form" method="POST">
+          <label className="field">
+            <span>Username</span>
+            <input autoComplete="username" name="username" required type="text" />
+          </label>
+
+          <label className="field">
+            <span>Password</span>
+            <input autoComplete="current-password" name="password" required type="password" />
+          </label>
+
+          <div className="auth-actions">
+            <button className="button button-primary" type="submit">
+              Sign in
+            </button>
+            <Link className="button button-secondary" href="/">
+              เปิดหน้าเว็บหลัก
+            </Link>
+          </div>
+        </form>
       </section>
     </div>
   );

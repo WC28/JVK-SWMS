@@ -1,26 +1,19 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { google } from "googleapis";
 import type { NextResponse } from "next/server";
-import { getAllowedUserByEmail } from "@/lib/db";
-import type { AllowedUser, AllowedUserRole, AppUserSession } from "@/lib/types";
+import { getAppUserAuthByUsername } from "@/lib/db";
+import type { AllowedUserRole, AppUserSession } from "@/lib/types";
 
 const APP_SESSION_COOKIE = "jvk_swms_session";
-const APP_AUTH_STATE_COOKIE = "jvk_swms_auth_state";
-const APP_AUTH_SCOPES = ["openid", "email", "profile"];
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
-type GoogleOauthTokens = {
-  access_token?: string | null;
-  id_token?: string | null;
-};
-
-type GoogleProfile = {
-  email?: string;
-  name?: string;
-  picture?: string;
-  verified_email?: boolean;
+type StoredUserAuth = {
+  username: string;
+  password_hash: string;
+  display_name: string;
+  role: AllowedUserRole;
+  is_active: boolean;
 };
 
 function toBase64Url(value: string) {
@@ -32,15 +25,10 @@ function fromBase64Url(value: string) {
 }
 
 function getSessionSecret() {
-  const secret =
-    process.env.APP_SESSION_SECRET ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const secret = process.env.APP_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!secret) {
-    throw new Error(
-      "APP_SESSION_SECRET, SUPABASE_SERVICE_ROLE_KEY, or GOOGLE_OAUTH_CLIENT_SECRET is required."
-    );
+    throw new Error("APP_SESSION_SECRET or SUPABASE_SERVICE_ROLE_KEY is required.");
   }
 
   return secret;
@@ -82,68 +70,63 @@ function verifyPayload<T>(value?: string | null) {
   }
 }
 
-function getGoogleAuthConfig() {
+function buildSession(user: StoredUserAuth): AppUserSession {
   return {
-    clientId: process.env.GOOGLE_OAUTH_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET
-  };
-}
-
-function createGoogleAuthClient(appUrl: string, callbackPath: string) {
-  const config = getGoogleAuthConfig();
-
-  if (!config.clientId || !config.clientSecret) {
-    throw new Error("Google OAuth client id/secret is missing.");
-  }
-
-  return new google.auth.OAuth2(
-    config.clientId,
-    config.clientSecret,
-    `${appUrl}${callbackPath}`
-  );
-}
-
-function buildSession(user: AllowedUser, profile: GoogleProfile): AppUserSession {
-  return {
-    email: user.email,
-    displayName: user.displayName || profile.name || user.email,
+    username: user.username,
+    displayName: user.display_name || user.username,
     role: user.role,
-    avatarUrl: profile.picture || "",
     expiresAt: Date.now() + SESSION_MAX_AGE_SECONDS * 1000
   };
 }
 
-export function hasAppGoogleAuthConfig() {
-  const config = getGoogleAuthConfig();
-  return Boolean(config.clientId && config.clientSecret);
+function parsePasswordHash(value: string) {
+  const [salt, hash] = value.split(":");
+  if (!salt || !hash) {
+    return null;
+  }
+
+  return { salt, hash };
 }
 
-export function getAppGoogleAuthUrl(appUrl: string) {
-  const client = createGoogleAuthClient(appUrl, "/api/auth/google/callback");
-  const state = crypto.randomUUID();
+export function hashPassword(password: string) {
+  const trimmed = password.trim();
+  if (trimmed.length < 8) {
+    throw new Error("Password must be at least 8 characters.");
+  }
 
-  return {
-    state,
-    url: client.generateAuthUrl({
-      access_type: "online",
-      prompt: "select_account",
-      scope: APP_AUTH_SCOPES
-    })
-  };
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(trimmed, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
 }
 
-export async function exchangeAppGoogleCode(code: string, appUrl: string) {
-  const client = createGoogleAuthClient(appUrl, "/api/auth/google/callback");
-  const { tokens } = await client.getToken(code);
-  client.setCredentials(tokens);
+export function verifyPassword(password: string, storedHash: string) {
+  const parsed = parsePasswordHash(storedHash);
+  if (!parsed) {
+    return false;
+  }
 
-  const oauth2 = google.oauth2({ version: "v2", auth: client });
-  const response = await oauth2.userinfo.get();
+  const derived = crypto.scryptSync(password, parsed.salt, 64);
+  const expected = Buffer.from(parsed.hash, "hex");
 
-  return {
-    tokens,
-    profile: response.data as GoogleProfile
-  };
+  if (derived.length !== expected.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(derived, expected);
+}
+
+export async function authenticateWithPassword(username: string, password: string) {
+  const user = await getAppUserAuthByUsername(username.trim().toLowerCase());
+
+  if (!user || !user.is_active) {
+    return null;
+  }
+
+  if (!verifyPassword(password, user.password_hash)) {
+    return null;
+  }
+
+  return buildSession(user);
 }
 
 export async function getCurrentSession() {
@@ -213,40 +196,11 @@ export async function requireApiSession(request: Request, roles?: AllowedUserRol
   return { error: null, session };
 }
 
-export function setStateCookie(response: NextResponse, state: string) {
-  response.cookies.set(APP_AUTH_STATE_COOKIE, signPayload({ state }), {
-    httpOnly: true,
-    sameSite: "none",
-    secure: true,
-    path: "/",
-    maxAge: 60 * 15
-  });
-}
-
-export async function readStateCookie() {
-  const cookieStore = await cookies();
-  const payload = verifyPayload<{ state: string }>(
-    cookieStore.get(APP_AUTH_STATE_COOKIE)?.value
-  );
-
-  return payload?.state ?? null;
-}
-
-export function clearStateCookie(response: NextResponse) {
-  response.cookies.set(APP_AUTH_STATE_COOKIE, "", {
-    httpOnly: true,
-    sameSite: "none",
-    secure: true,
-    path: "/",
-    maxAge: 0
-  });
-}
-
 export function setSessionCookie(response: NextResponse, session: AppUserSession) {
   response.cookies.set(APP_SESSION_COOKIE, signPayload(session), {
     httpOnly: true,
     sameSite: "lax",
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: SESSION_MAX_AGE_SECONDS
   });
@@ -256,20 +210,10 @@ export function clearSessionCookie(response: NextResponse) {
   response.cookies.set(APP_SESSION_COOKIE, "", {
     httpOnly: true,
     sameSite: "lax",
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: 0
   });
-}
-
-export async function createSessionForAllowedUser(email: string, profile: GoogleProfile) {
-  const allowedUser = await getAllowedUserByEmail(email);
-
-  if (!allowedUser || !allowedUser.isActive) {
-    return null;
-  }
-
-  return buildSession(allowedUser, profile);
 }
 
 export async function canManageRecords() {

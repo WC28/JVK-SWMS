@@ -61,7 +61,7 @@ export function MainNav({ session }: MainNavProps) {
           <>
             <div className="nav-user-badge">
               <strong>{session.displayName}</strong>
-              <span>{`${session.role} • ${session.email}`}</span>
+              <span>{`${session.role} • ${session.username}`}</span>
             </div>
             <a className="button button-secondary" href="/api/auth/logout">
               Sign out

@@ -1,6 +1,6 @@
 import { calculateJvkDeadline, normalizeStatus } from "@/lib/business-days";
 import { defaultCaseForm } from "@/lib/constants";
-import type { AllowedUser, AllowedUserRole, CaseRecord, MonthlySnapshot } from "@/lib/types";
+import type { AppUser, AllowedUserRole, CaseRecord, MonthlySnapshot } from "@/lib/types";
 
 const PAGE_SIZE = 1000;
 
@@ -53,8 +53,9 @@ type DbSettingRow = {
   updated_at: string;
 };
 
-type DbAllowedUserRow = {
-  email: string;
+type DbAppUserRow = {
+  username: string;
+  password_hash: string;
   display_name: string;
   role: AllowedUserRole;
   is_active: boolean;
@@ -205,9 +206,9 @@ function mapSnapshotRow(row: DbSnapshotRow): MonthlySnapshot {
   };
 }
 
-function mapAllowedUserRow(row: DbAllowedUserRow): AllowedUser {
+function mapAppUserRow(row: DbAppUserRow): AppUser {
   return {
-    email: row.email,
+    username: row.username,
     displayName: row.display_name,
     role: row.role,
     isActive: Boolean(row.is_active),
@@ -487,34 +488,51 @@ export async function deleteAppSetting(key: string) {
   );
 }
 
-export async function listAllowedUsers() {
+export async function listAppUsers() {
   if (!hasSupabaseConfig()) {
     return [];
   }
 
-  const rows = await selectAll<DbAllowedUserRow>("allowed_users?select=*&order=email.asc");
-  return rows.map(mapAllowedUserRow);
+  const rows = await selectAll<DbAppUserRow>("app_users?select=*&order=username.asc");
+  return rows.map(mapAppUserRow);
 }
 
-export async function getAllowedUserByEmail(email: string) {
+export async function getAppUserByUsername(username: string) {
   if (!hasSupabaseConfig()) {
     return null;
   }
 
-  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedUsername = username.trim().toLowerCase();
   const row = unwrapSingle(
-    await supabaseRequest<DbAllowedUserRow[]>(
-      `allowed_users?select=*&email=eq.${encodeURIComponent(normalizedEmail)}&limit=1`,
+    await supabaseRequest<DbAppUserRow[]>(
+      `app_users?select=*&username=eq.${encodeURIComponent(normalizedUsername)}&limit=1`,
       { method: "GET" }
     )
   );
 
-  return row ? mapAllowedUserRow(row) : null;
+  return row ? mapAppUserRow(row) : null;
 }
 
-export async function upsertAllowedUser(payload: {
-  email: string;
+export async function getAppUserAuthByUsername(username: string) {
+  if (!hasSupabaseConfig()) {
+    return null;
+  }
+
+  const normalizedUsername = username.trim().toLowerCase();
+  const row = unwrapSingle(
+    await supabaseRequest<DbAppUserRow[]>(
+      `app_users?select=*&username=eq.${encodeURIComponent(normalizedUsername)}&limit=1`,
+      { method: "GET" }
+    )
+  );
+
+  return row;
+}
+
+export async function upsertAppUser(payload: {
+  username: string;
   displayName?: string;
+  passwordHash?: string;
   role: AllowedUserRole;
   isActive?: boolean;
 }) {
@@ -522,8 +540,12 @@ export async function upsertAllowedUser(payload: {
     return null;
   }
 
+  const normalizedUsername = payload.username.trim().toLowerCase();
+  const existing = await getAppUserAuthByUsername(normalizedUsername);
+
   const normalized = {
-    email: payload.email.trim().toLowerCase(),
+    username: normalizedUsername,
+    password_hash: payload.passwordHash ?? existing?.password_hash ?? "",
     display_name: payload.displayName?.trim() || "",
     role: payload.role,
     is_active: payload.isActive ?? true,
@@ -531,8 +553,8 @@ export async function upsertAllowedUser(payload: {
   };
 
   const saved = unwrapSingle(
-    await supabaseRequest<DbAllowedUserRow[]>(
-      "allowed_users",
+    await supabaseRequest<DbAppUserRow[]>(
+      "app_users",
       {
         method: "POST",
         body: JSON.stringify(normalized)
@@ -543,16 +565,16 @@ export async function upsertAllowedUser(payload: {
     )
   );
 
-  return saved ? mapAllowedUserRow(saved) : null;
+  return saved ? mapAppUserRow(saved) : null;
 }
 
-export async function deleteAllowedUser(email: string) {
+export async function deleteAppUser(username: string) {
   if (!hasSupabaseConfig()) {
     return;
   }
 
   await supabaseRequest(
-    `allowed_users?email=eq.${encodeURIComponent(email.trim().toLowerCase())}`,
+    `app_users?username=eq.${encodeURIComponent(username.trim().toLowerCase())}`,
     { method: "DELETE" },
     { Prefer: "return=minimal" }
   );
