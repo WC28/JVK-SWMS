@@ -216,7 +216,7 @@ export async function requireApiSession(request: Request, roles?: AllowedUserRol
 export function setStateCookie(response: NextResponse, state: string) {
   response.cookies.set(APP_AUTH_STATE_COOKIE, signPayload({ state }), {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     secure: true,
     path: "/",
     maxAge: 60 * 15
@@ -235,7 +235,7 @@ export async function readStateCookie() {
 export function clearStateCookie(response: NextResponse) {
   response.cookies.set(APP_AUTH_STATE_COOKIE, "", {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     secure: true,
     path: "/",
     maxAge: 0
