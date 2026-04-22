@@ -29,9 +29,11 @@ export function MainNav({ session }: MainNavProps) {
             src="/branding/jvk-sw-logo.png"
           />
           <div className="brand-copy">
-            <span className="brand-kicker">Psychiatric Care Platform</span>
+            <span className="brand-kicker">JVK SWMS</span>
             <span className="brand-mark">JVK SWMS</span>
-            <span className="brand-sub">Information Case, KPI Dashboard, Monthly Reporting</span>
+            <span className="brand-sub">
+              Information Case และ Dashboard รายเดือนในระบบเดียว
+            </span>
           </div>
         </Link>
 

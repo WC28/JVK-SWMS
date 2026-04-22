@@ -96,6 +96,7 @@ textarea {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 18px;
   padding: 18px 28px;
   background: rgba(245, 250, 255, 0.88);
@@ -160,8 +161,9 @@ textarea {
 
 .brand-sub {
   color: var(--muted);
-  font-size: 0.94rem;
+  font-size: 0.9rem;
   font-weight: 500;
+  max-width: 34ch;
 }
 
 .brand-badge {
@@ -195,6 +197,9 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  flex: 1 1 480px;
+  min-width: 320px;
+  justify-content: center;
 }
 
 .nav-link {
@@ -212,6 +217,39 @@ textarea {
 .nav-link:hover {
   transform: translateY(-1px);
   background: rgba(255, 255, 255, 0.96);
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  flex: 0 1 auto;
+}
+
+.nav-user-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  max-width: 220px;
+  text-align: right;
+}
+
+.nav-user-badge strong {
+  color: var(--ink);
+  font-size: 0.96rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.nav-user-badge span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.2;
+  word-break: break-word;
 }
 
 .stack-xl {
@@ -297,6 +335,31 @@ textarea {
   color: var(--ink-soft);
   font-size: 1.07rem;
   line-height: 1.7;
+}
+
+.hero-quote {
+  margin: 0;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 45rem;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(116, 144, 204, 0.18);
+  box-shadow: var(--shadow-soft);
+}
+
+.hero-quote span,
+.hero-quote strong {
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.hero-quote strong {
+  color: #143eb8;
+  font-weight: 900;
 }
 
 .hero-actions,
@@ -1798,6 +1861,18 @@ textarea {
     align-items: flex-start;
   }
 
+  .nav-links,
+  .nav-user {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .nav-user-badge {
+    align-items: flex-start;
+    text-align: left;
+    max-width: none;
+  }
+
   .hero,
   .content-grid,
   .metrics-grid,
@@ -1894,6 +1969,17 @@ textarea {
     width: 100%;
   }
 
+  .nav-user {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nav-user .button {
+    width: 100%;
+    text-align: center;
+  }
+
   .nav-link {
     width: 100%;
     justify-content: center;
@@ -1934,6 +2020,15 @@ textarea {
   .page-header h1,
   .dashboard-banner h1 {
     font-size: clamp(2.1rem, 8vw, 3.4rem);
+  }
+
+  .hero-quote {
+    padding: 16px 18px;
+  }
+
+  .hero-quote span,
+  .hero-quote strong {
+    font-size: 0.95rem;
   }
 
   .sw-banner h1 {

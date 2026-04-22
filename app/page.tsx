@@ -17,16 +17,21 @@ export default async function HomePage() {
       <section className="hero hero-premium">
         <div className="hero-content">
           <div className="hero-brow">
-            <span className="eyebrow">JVK Social Work Management System</span>
+            <span className="eyebrow">JVK SWMS</span>
             <span className="hero-status">Hospital High-Tech Edition</span>
           </div>
 
-          <h1>Information Case และ Dashboard รายเดือนในระบบเดียว</h1>
+          <h1>JVK SWMS</h1>
           <p className="hero-copy">
-            ระบบสำหรับทีมสังคมสงเคราะห์ที่เชื่อมข้อมูลเคส, dashboard, monthly snapshot,
-            PNG export และระบบผู้ใช้ภายในให้อยู่ในประสบการณ์เดียวที่อ่านง่าย
-            และพร้อมใช้งานระดับองค์กร
+            Information Case และ Dashboard รายเดือนในระบบเดียว ยกระดับงานสังคมสงเคราะห์จิตเวช
+            สู่ดิจิทัล
           </p>
+          <blockquote className="hero-quote">
+            <span>สร้างระบบที่ทำให้</span>
+            <span>นักสังคมสงเคราะห์จิตเวช</span>
+            <span>มีเวลามากขึ้นสำหรับ สิ่งที่สำคัญที่สุด —</span>
+            <strong>การดูแลผู้ป่วยและครอบครัว</strong>
+          </blockquote>
 
           <div className="hero-actions">
             <Link className="button button-primary" href="/cases">
